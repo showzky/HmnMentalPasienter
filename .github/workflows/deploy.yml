@@ -1,0 +1,41 @@
+name: 🚀 Deploy to VPS
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Build the frontend (running npm install and npm run build)
+      - name: Build frontend
+        run: |
+          npm install
+          npm run build
+
+      # Copy the dist files to the VPS server
+      - name: Copy dist to VPS
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: 135.181.64.71
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "dist/*"
+          target: "/var/www/hmnmentalpasienter/dist"
+
+      # SSH into VPS and run deploy.sh script (with possible reload of Nginx)
+      - name: SSH and run deploy script
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: 135.181.64.71
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo /var/www/deploy.sh
