@@ -19,7 +19,7 @@ import FriendsList from '@/views/FriendsList.vue'
 //import UserProfile from '../pages/UserProfile.vue';
 import PendingRequests from '../components/PendingRequests.vue';
 import Shop from '@/pages/Shop.vue';
-import Contact from '@/pages/Contact.vue'; 
+import Contact from '@/pages/Contact.vue';   
 
 const routes = [
   { path: '/', component: Home },

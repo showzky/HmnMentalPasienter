@@ -2386,7 +2386,13 @@ def upload_team_avatar():
     db.session.commit()
     return jsonify({"msg": "Avatar updated", "avatar_url": member.avatar}), 200
 
-
+# app.py (add below other endpoints)
+@app.route('/api/user/points', methods=['GET'])
+@jwt_required()
+def user_points():
+    uid = get_jwt_identity()
+    user = User.query.get(int(uid))
+    return jsonify({"points": user.fitte_points}), 200
 
 
 

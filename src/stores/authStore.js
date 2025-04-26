@@ -1,5 +1,6 @@
 // src/stores/authStore.js
 import { defineStore } from 'pinia';
+import axios from '@/axios';
 
 export const useAuthStore = defineStore('auth', {
   // State: authentication status, user info, and token
@@ -7,8 +8,21 @@ export const useAuthStore = defineStore('auth', {
     isAuthenticated: !!localStorage.getItem('access_token'),
     user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null,
     token: localStorage.getItem('access_token') || null,
+    fittePoints: 0,
   }),
   actions: {
+    async fetchFittePoints() {
+      try {
+        // Hit your existing endpoint
+        const res = await axios.get('/get-fitte-points', {
+          headers: { Authorization: `Bearer ${this.token}` }
+        });
+        // Update the store
+        this.fittePoints = res.data.fitte_points;
+      } catch (err) {
+        console.error('Could not load Fitte Points:', err);
+      }
+    },
     // Call this after a successful login API call
     login(user, token) {
       this.user = user;

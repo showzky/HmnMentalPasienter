@@ -310,7 +310,7 @@ export default {
       if (!route.params.userId) return true;
       return +route.params.userId === auth.user?.id;
     });
-
+    
     const userToShow = computed(() => {
       return isOwnProfile.value ? auth.user : profileUser.value;
     });

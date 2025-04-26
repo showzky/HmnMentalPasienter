@@ -8,6 +8,11 @@
       </div>
     </header>
 
+    <div class="current-balance">
+      <h2>Current Balance</h2>
+      <p>{{ fittePoints }} Fitte Points</p>
+    </div>
+
     <!-- Tabs for Badges & Themes -->
     <div class="shop-tabs">
       <button
@@ -63,10 +68,9 @@ export default {
   name: 'Shop',
   setup() {
     const auth = useAuthStore();
-    const fittePoints = ref(0);
     const activeTab = ref('badge');
-    
-    // Example items; fetch real data via API
+
+    // Example items; in the future fetch these via API
     const items = ref([
       { id: 1, name: 'Golden Badge', description: 'Exclusive golden badge', price: 50, icon: '🥇', type: 'badge' },
       { id: 2, name: 'Silver Badge', description: 'Shiny silver badge', price: 30, icon: '🥈', type: 'badge' },
@@ -74,27 +78,28 @@ export default {
       { id: 4, name: 'Neon Theme', description: 'Vibrant neon theme', price: 100, icon: '✨', type: 'theme' }
     ]);
 
+    // Filter items based on selected tab
     const filteredItems = computed(() =>
       items.value.filter(item => item.type === activeTab.value)
     );
 
-    const loadBalance = async () => {
-      try {
-        // fetch from backend
-        const res = await axios.get('/user/points');
-        fittePoints.value = res.data.points;
-      } catch {
-        // fallback
-        fittePoints.value = auth.user?.fittePoints || 0;
+    // Bind to store's fittePoints so it's the same everywhere
+    const fittePoints = computed(() => auth.fittePoints);
+
+    // On mount, fetch the latest balance
+    onMounted(async () => {
+      const saved = localStorage.getItem('fittePoints');
+      if (saved !== null) {
+        auth.fittePoints = parseInt(saved, 10); // Sync with localStorage
       }
-    };
+    });
 
     const purchaseItem = async (item) => {
-      // TODO: call API to purchase
+      // TODO: call API to purchase and then refresh points via store
       console.log('Purchasing:', item);
+      // after successful purchase:
+      // await auth.fetchFittePoints();
     };
-
-    onMounted(loadBalance);
 
     return {
       fittePoints,
@@ -105,6 +110,8 @@ export default {
   }
 };
 </script>
+
+
 
 <style scoped>
 .shop-container {
@@ -133,6 +140,26 @@ export default {
 }
 .balance-label { color: var(--text); opacity: 0.8; }
 .balance-amount { color: var(--primary); font-weight: 600; }
+
+.current-balance {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.current-balance h2 {
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.current-balance p {
+  font-size: 1.25rem;
+  color: #ff61c2;
+  font-weight: bold;
+}
 
 .shop-tabs {
   display: flex;
