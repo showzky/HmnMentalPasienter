@@ -1,0 +1,49 @@
+/* Global badge and rarity styles for all badge displays */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+
+  box-shadow: 0 1px 4px rgba(128, 12, 12, 0.12);
+  border: none;
+  letter-spacing: 0.5px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  margin-left: 0;
+}
+
+.badge.common {
+  background: linear-gradient(90deg, #2c3e50 60%, #3498db 100%) !important;
+  box-shadow: 0 0 6px 2px #3498db55;
+}
+
+
+.badge.rare {
+  background: linear-gradient(90deg, #121e25 60%, #6dd5fa 100%) !important;
+  box-shadow: 0 0 8px 2px #6dd5fa55;
+}
+
+.badge.epic {
+  background: linear-gradient(90deg, #9b59b6 60%, #e0aaff 100%) !important;
+  box-shadow: 0 0 10px 2px #e0aaff88;
+}
+
+.badge.legendary {
+  background: linear-gradient(90deg, #f39c12 60%, #f8e473 100%) !important;
+  color: #222;
+  border: 2px solid #fffbe6;
+  box-shadow: 0 0 16px 4px #f8e47399, 0 0 0 2px #fff3;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.badge:hover {
+  transform: scale(1.08) rotate(-2deg);
+  box-shadow: 0 0 20px 6px #fff6, 0 0 0 2px #fff4;
+  z-index: 2;
+} 

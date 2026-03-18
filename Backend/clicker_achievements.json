@@ -1,0 +1,26 @@
+[
+  {
+    "id": "click_10",
+    "name": "First Ten!",
+    "desc": "Click the cookie 10 times.",
+    "icon": "https://res.cloudinary.com/di8fs1bcm/image/upload/v1748161559/first10_aahrke.png",
+    "type": "clicks",
+    "value": 10
+  },
+  {
+    "id": "click_100",
+    "name": "Centurion",
+    "desc": "Click the cookie 100 times.",
+    "icon": "https://res.cloudinary.com/di8fs1bcm/image/upload/v1748169352/100times_jkmtd2.png",
+    "type": "clicks",
+    "value": 100
+  },
+  {
+    "id": "auto_1",
+    "name": "Automation!",
+    "desc": "Buy your first auto-clicker.",
+    "icon": "https://res.cloudinary.com/di8fs1bcm/image/upload/v1748169472/automation_tbmgvy.png",
+    "type": "autoClickers",
+    "value": 1
+  }
+]
