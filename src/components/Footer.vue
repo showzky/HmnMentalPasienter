@@ -14,7 +14,10 @@
             <li><router-link to="/">Hjem</router-link></li>
             <li><router-link to="/about">Om oss</router-link></li>
             <li><router-link to="/tjenester">Tjenester</router-link></li>
-            <li><router-link to="/kontakt">Kontakt</router-link></li> <!-- Placeholder -->
+            <li><router-link to="/contact">Kontakt</router-link></li> 
+            <li><router-link to="/changelog">ChangeLog</router-link></li>
+            <li><router-link to="/tos">TermsOfService</router-link></li>
+
           </ul>
         </div>
   

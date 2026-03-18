@@ -38,7 +38,30 @@
         :key="item.id"
       >
         <div class="item-icon-wrapper">
-          <span class="item-icon" :aria-label="item.name + ' icon'" role="img">{{ item.icon }}</span>
+          <!-- SVG as inline string -->
+          <span
+            v-if="item.icon && item.icon.startsWith('<svg')"
+            v-html="item.icon"
+            class="item-svg-icon"
+          ></span>
+          <!-- SVG as base64 data URL -->
+          <img
+            v-else-if="item.icon && item.icon.startsWith('data:image/svg+xml')"
+            :src="item.icon"
+            class="item-svg-icon"
+            :alt="item.name + ' icon'"
+          />
+          <!-- SVG as Cloudinary URL -->
+          <img
+            v-else-if="item.icon && item.icon.endsWith('.svg') && item.icon.startsWith('https://res.cloudinary.com')"
+            :src="item.icon"
+            class="item-svg-icon"
+            :alt="item.name + ' icon'"
+          />
+          <!-- Emoji or text fallback -->
+          <span v-else class="item-icon" :aria-label="item.name + ' icon'" role="img">
+            {{ item.icon || 'Badge' }}
+          </span>
         </div>
         <div class="item-content">
           <h2 class="item-name">{{ item.name }}</h2>
@@ -64,52 +87,75 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
+import axios from '@/axios';
 
 export default {
   name: 'Shop',
   setup() {
     const auth = useAuthStore();
     const activeTab = ref('badge');
+    const defaultGlow = (rarity) => {
+    const colors = {
+    common: '#aaa',
+    rare: '#3498db',
+    epic: '#9b59b6',
+    legendary: '#f39c12'
+  };
+  return colors[rarity] || '#aaa';
+};
+    const items = ref([]);
 
-    const items = ref([
-      // Dummy items for shop display
-      { id: 1, name: 'Golden Badge', description: 'Exclusive golden badge', price: 50, icon: '🥇', type: 'badge' },
-      { id: 2, name: 'Silver Badge', description: 'Shiny silver badge', price: 30, icon: '🥈', type: 'badge' },
-      { id: 3, name: 'Bronze Badge', description: 'Classic bronze badge', price: 20, icon: '🥉', type: 'badge' },
-      { id: 4, name: 'Dark Theme', description: 'Sleek dark mode theme', price: 80, icon: '🌙', type: 'theme' },
-      { id: 5, name: 'Neon Theme', description: 'Vibrant neon theme', price: 100, icon: '✨', type: 'theme' }
-    ]);
+    const fetchShopItems = async () => {
+      try {
+        const { data } = await axios.get('/shop-items');
+        items.value = data;
+      } catch (e) {
+        console.error('Error fetching shop items:', e);
+      }
+    };
 
-    const filteredItems = computed(() =>
-      items.value.filter(item => item.type === activeTab.value)
-    );
+    const filteredItems = computed(() => {
+      const filtered = items.value.filter(item => item.type === activeTab.value);
+      console.log('Shop filteredItems:', filtered);
+      return filtered;
+    });
 
     const fittePoints = ref(0);
 
-    onMounted(async () => {
+    const fetchFittePoints = async () => {
       try {
-        const { data } = await axios.get('/get-fitte-points')
-        fittePoints.value = data.points
+        const { data } = await axios.get('/get-fitte-points');
+        fittePoints.value = data.points;
       } catch (e) {
-        console.error(e)
-      }
-    });
-
-    const purchaseItem = async (item) => {
-      try {
-        console.log('Purchasing:', item);
-        // TODO: Integrate purchase API and update store
-        // await auth.fetchFittePoints();
-      } catch (error) {
-        console.error('Purchase failed', error);
+        console.error('Failed to fetch points:', e);
       }
     };
+
+    onMounted(() => {
+  fetchFittePoints();
+  fetchShopItems();
+  });
+
+    // add logic to update points after purchase ;) 
+    const purchaseItem = async (item) => {
+  try {
+    console.log('Purchasing:', item);
+    await axios.post('/purchase-item', { itemId: item.id });
+    await fetchFittePoints(); // Refresh points after purchase
+  } catch (error) {
+    const msg = error.response?.data?.msg || 'Purchase failed';
+    console.error('Purchase failed:', msg);
+    // Optionally show a toast or alert here:
+    // alert(msg);
+  }
+};
 
     return {
       fittePoints,
       activeTab,
       filteredItems,
-      purchaseItem
+      purchaseItem,
+      defaultGlow
     };
   }
 };
@@ -117,6 +163,7 @@ export default {
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap');
+@import '@/assets/badges.css';
 
 .shop-container {
   --primary: #ff4081;
@@ -290,5 +337,12 @@ export default {
   .shop-tabs {
     flex-direction: column;
   }
+}
+
+.item-svg-icon {
+  width: 140px;
+  height: 140px;
+  display: inline-block;
+  vertical-align: middle;
 }
 </style>

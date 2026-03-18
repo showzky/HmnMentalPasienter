@@ -7,7 +7,7 @@ export function useWebSocket() {
   const auth = useAuthStore();
 
   // Use environment variable for production vs. development
-  const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+  const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
   const socket = io(SOCKET_URL);
 
   const handleRoleUpdate = (newRoleData) => {

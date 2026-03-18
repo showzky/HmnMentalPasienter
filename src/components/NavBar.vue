@@ -26,7 +26,12 @@
 
           <transition name="slide-fade">
             <div v-if="showDropdown" class="dropdown-menu" ref="dropdownMenu" @click.stop>
-
+              
+               <!-- Profile & Settings -->
+               <button class="dropdown-item" @click="viewProfile"><i class="fas fa-user mr-2"></i>Vis Profil</button>
+               <button class="dropdown-item" @click="goToSettings">
+                 <i class="fas fa-cog mr-2"></i>Settings
+               </button>
               <!-- Toggle Notifications -->
               <div class="dropdown-item" @click="toggleNotificationsList">
                 <i class="fas fa-bell mr-2"></i>Notifications
@@ -35,13 +40,6 @@
                 </span>
               </div>
 
-              <!-- Toggle Friend Requests -->
-              <div class="dropdown-item" @click="toggleRequestsList">
-                <i class="fas fa-user-friends mr-2"></i>Friend Requests
-                <span v-if="pendingRequests.length > 0" class="notification-count-badge">
-                  {{ pendingRequests.length }}
-                </span>
-              </div>
 
               <!-- Notification List -->
               <transition name="slide-fade">
@@ -60,6 +58,14 @@
                   </div>
                 </div>
               </transition>
+
+              <!-- Toggle Friend Requests -->
+              <div class="dropdown-item" @click="toggleRequestsList">
+                <i class="fas fa-user-friends mr-2"></i>Friend Requests
+                <span v-if="pendingRequests.length > 0" class="notification-count-badge">
+                  {{ pendingRequests.length }}
+                </span>
+              </div>
 
               <!-- Friend Requests List -->
               <transition name="slide-fade">
@@ -80,11 +86,7 @@
                 </div>
               </transition>
 
-              <!-- Profile & Settings -->
-              <button class="dropdown-item" @click="viewProfile">Vis Profil</button>
-              <button class="dropdown-item" @click="goToSettings">
-                <i class="fas fa-cog mr-2"></i>Settings
-              </button>
+             
 
               <!-- Dark Mode -->
               <button class="dropdown-item dark-mode-toggle" @click="toggleDarkMode">
@@ -92,8 +94,11 @@
                 <span>{{ isDarkMode ? 'Light Mode' : 'Dark Mode' }}</span>
               </button>
 
+              <ProducerButton v-if="isProducer" />
+
               <!-- Logout -->
-              <button class="dropdown-item" @click="logoutUser">Utlogging</button>
+              <button class="dropdown-item" @click="logoutUser"><i class="fas fa-sign-out-alt"></i>Utlogging</button>
+              
             </div>
           </transition>
         </li>
@@ -113,9 +118,14 @@
 import { useAuthStore } from '@/stores/authStore';
 import axios from '@/axios';
 import { listIncomingRequests, acceptFriendRequest, declineFriendRequest } from '@/services/friendRequestService';
+import ProducerButton from '@/components/ProducerButton.vue';
+import { toHandlers } from 'vue';
 
 export default {
   name: 'Navbar',
+  components: {
+    ProducerButton
+  },
   emits: ['toggle-login'],
   data() {
     return {
@@ -149,6 +159,11 @@ export default {
         console.error('Error fetching notifications:', error);
       }
     },
+    isProducer() {
+  const user = this.auth.user;
+  if (!user || !user.roles) return false;
+  return user.roles.some(role => role.name.toLowerCase() === 'producer');
+  },
     async fetchRequests() {
       try {
         const { data } = await listIncomingRequests();
@@ -174,6 +189,9 @@ export default {
 },
     toggleNotificationsList() {
       this.showNotificationsList = !this.showNotificationsList;
+      if (this.showNotificationsList) {
+        this.showRequestsList = false;
+      }
     },
     async acceptRequest(id) {
   await acceptFriendRequest(id);
@@ -597,21 +615,6 @@ export default {
   color: #666;
 }
 
-/* Pseudo-element icons for dropdown items */
-.dropdown-item:first-child::after {
-  content: '👤';
-  margin-left: auto;
-}
-
-.dropdown-item:nth-child(2)::after {
-  content: '🔑';
-  margin-left: auto;
-}
-
-.dropdown-item:last-child::after {
-  content: '🚪';
-  margin-left: auto;
-}
 
 /* Dark mode styles */
 .dark-mode .logo {

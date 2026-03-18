@@ -22,7 +22,6 @@
             @change="handleBannerImageChange"
             hidden
           />
-
           <div class="avatar-container">
             <!-- Only you can upload your own avatar -->
             <label
@@ -191,14 +190,24 @@
         >
           🛒 Shop
         </div>
+      
+        <div
+          class="nav-item"
+          :class="{ active: $route.path === 'purchased-items' }"
+          @click="activeNav = 'purchased-items'"
+        >
+           purchased items
+        </div>
       </nav>
 
       <!-- MAIN CONTENT -->
       <div class="content-grid">
         <!-- ACTIVITY FEED -->
         <div class="activity-feed">
-          <h2>Recent Madness</h2>
+          
+          <PurchasedItems v-if="activeNav === 'purchased-items'" />
           <FriendsList v-if="activeNav === 'friends'" ref="friendsList" />
+        
           <div v-if="activeNav === 'shop'" class="shop-section">
             <h2>Shop</h2>
             <div class="shop-items">
@@ -240,6 +249,7 @@
               <small>{{ activity.time }}</small>
             </div>
           </div>
+          <AchievementPanel v-if="activeNav === 'achievements'" />
         </div>
 
         <!-- QUICK ACTIONS (only on your own profile) -->
@@ -289,13 +299,17 @@ import { fetchUsers } from '@/services/userService'
 import { useAuthStore } from '@/stores/authStore';
 import axios from '@/axios';
 import AdminButton from '@/components/AdminButton.vue';
+import PurchasedItems from '@/components/PurchasedItems.vue';
+import AchievementPanel from '@/components/AchievementPanel.vue';
 
 export default {
   name: 'NeuroLabProfile',
   components: {
     SnackBar,
     FriendsList,
-    AdminButton
+    AdminButton,
+    PurchasedItems,
+    AchievementPanel,
   },
   setup() {
     const auth = useAuthStore();
@@ -388,7 +402,6 @@ export default {
       await auth.fetchFittePoints();
 
       fetchWeeklyActivity();
-      trackDashboardVisit();
 
       canvas = document.getElementById('fluid-canvas');
       if (canvas) {
@@ -440,26 +453,68 @@ export default {
         const res = await axios.get('/get-weekly-activity', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        labActivity.value = res.data.weekly_visits;
+        labActivity.value = res.data.weekly_hours;
       } catch (err) {
         console.error('Error fetching activity:', err);
       }
     }
 
-    async function trackDashboardVisit() {
-      try {
-        const token = localStorage.getItem('access_token');
-        await axios.post(
-          `${import.meta.env.VITE_API_URL}/track-dashboard-visit`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      } catch (err) {
-        console.error('Tracking visit failed:', err);
+
+    let activityInterval = null;
+    let secondsActive = 0;
+    let isTabActive = true;
+    let canvas, context;
+
+    function sendActivityUpdate(seconds) { 
+      if (seconds > 0) {
+        axios.post('/track-dashboard-visit', { seconds })
+        .catch (err => console.error('Error sending activity update:', err));
       }
     }
 
-    let canvas, context;
+    function startActivityTimer() {
+  if (activityInterval) return; // Prevent multiple intervals
+  activityInterval = setInterval(() => {
+    if (isTabActive) {
+      secondsActive += 1;
+      // Send every 60 seconds
+      if (secondsActive % 60 === 0) {
+        sendActivityUpdate(60);
+        secondsActive = 0;
+      }
+    }
+  }, 1000);
+}
+      
+  function stopActivityTimer() {
+    if (activityInterval) {
+      clearInterval(activityInterval);
+      activityInterval = null;
+    }
+  }
+
+  function handleVisibilityChange() {
+    isTabActive = !document.hidden;
+    if (isTabActive) {
+      startActivityTimer();
+    } else {
+      sendActivityUpdate(secondsActive);
+      secondsActive = 0;
+      stopActivityTimer();
+    }
+  }
+
+  onMounted(() => {
+    startActivityTimer();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+  });
+
+  onBeforeUnmount(() => {
+    sendActivityUpdate(secondsActive);
+    stopActivityTimer();
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  });
+
 
     function updateFluidFill(percentage) {
       if (!canvas || !context) return;
@@ -720,6 +775,7 @@ body {
   width: 100%;
 }
 
+
 /* Add responsive styles */
 @media (max-width: 768px) {
   .profile-container {
@@ -760,6 +816,10 @@ body {
   .profile-nav {
     flex-wrap: wrap;
     gap: 0.5rem;
+  }
+
+  .profile-nav {
+    border-bottom: 2.5px solid #f30800; /* or your preferred color */
   }
 
   .nav-item {
@@ -1266,7 +1326,19 @@ role-badge {
   display: flex;
   gap: 1rem;
   margin: 2rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent; 
+  border-bottom: 4px solid transparent; 
+  position: relative;
+}
+
+.profile-nav::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 4px;
+  background: linear-gradient(to right, #99c3df, #405579);
+  border-radius: 2px;
+  z-index: 1;
 }
 .nav-item {
   padding: 1rem;
@@ -1282,11 +1354,13 @@ role-badge {
 .nav-item.active::after {
   content: '';
   position: absolute;
-  bottom: -1px;
+  bottom: -2px;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 4px;
   background: var(--accent);
+  border-radius: 2px;
+  transition: all 0.3s cubic-bezier(.4,0,.2,1);
 }
 
 /* Content Grid */

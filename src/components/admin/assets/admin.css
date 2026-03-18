@@ -1,0 +1,1358 @@
+/* LAYOUT */
+.admin-body-container {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    background-color: #e9ecef;
+    overflow: hidden;
+  }
+  
+  /* SIDEBAR */
+  .admin-sidebar {
+    background-color: #2d3238;
+    width: 200px;
+    padding: 1rem 0;
+    color: #ddd;
+  }
+  .admin-sidebar nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .admin-sidebar nav li {
+    margin: 0.2rem 0;
+  }
+  .admin-sidebar nav a {
+    display: block;
+    color: #ddd;
+    text-decoration: none;
+    padding: 0.7rem 1.5rem;
+    transition: background-color 0.15s;
+  }
+  .admin-sidebar nav a:hover,
+  .admin-sidebar nav a.active {
+    background-color: #dc3545;
+    color: #fff;
+    font-weight: 500;
+  }
+  /* --- File Upload Styling --- */
+  .file-upload-group {
+    display: flex;
+    flex-direction: column; /* Stack label and feedback message if needed */
+    margin-top: 1rem;
+  }
+  
+  .file-upload-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    max-width: 220px;
+  }
+  
+  .file-upload-label:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+  }
+  
+  .file-upload-label:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  .file-upload-label::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.1);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .file-upload-label:hover::before {
+    opacity: 1;
+  }
+  
+  .file-upload-label svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: currentColor;
+    transition: transform 0.2s ease;
+  }
+  
+  .file-upload-label:active svg {
+    transform: scale(0.95);
+  }
+  
+  .file-upload-label:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+  }
+  
+  /* Optional: Add an icon animation */
+  .file-upload-label:hover svg {
+    animation: float 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+  
+  .hidden-file-input {
+    position: absolute;
+    opacity: 0;
+    z-index: -1; /* Ensure it's behind other elements */
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    /* Important: Keep it focusable for accessibility, but hide visually */
+  }
+  
+  /* Optional: Style the area around the button (if needed) */
+  .form-group.file-upload-group label {
+    margin-bottom: 0; /* Remove default label margin if needed */
+  }
+  
+  /* MAIN CONTENT */
+  .admin-content {
+    flex-grow: 1;
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+  }
+  .admin-content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1.5rem;
+  }
+  .admin-content-header h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #343a40;
+  }
+  .profile-info .username {
+    font-size: 1rem;
+    color: #6c757d;
+    margin: 0;
+  } 
+  
+  
+  /* GRID AREA */
+  .content-area {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    width: 100%;
+    margin-bottom: 2rem;
+  }
+  
+  /* WIDGETS */
+  /* Updated styles for Data Widgets in the Users Tab */
+  .data-widget {
+    background-color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    margin-bottom: 0; /* Remove bottom margin, grid gap handles spacing */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+  
+  .data-widget h3 {
+    margin-top: 0;
+    margin-bottom: 1.2rem;
+    font-size: 1.25rem; /* Slightly larger title */
+    font-weight: 500; /* Slightly lighter font weight for modern feel */
+    color: #333; /* Darker text for better contrast */
+    text-transform: none; /* Keep the title as is */
+  }
+  
+  .data-widget .form-group {
+    margin-bottom: 1.2rem; /* More spacing between form elements */
+  }
+  
+  .data-widget label {
+    font-size: 0.95rem;
+    color: #555; /* Slightly lighter label color */
+    margin-bottom: 0.4rem;
+    display: block; /* Ensure labels are on their own line */
+  }
+  
+  .data-widget select {
+    border: 1px solid #ddd;
+    border-radius: 0.3rem;
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+    width: 100%; /* Make select boxes full width */
+    appearance: none; /* Remove default arrow for custom styling */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); /* Custom arrow */
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    background-size: 1rem;
+  }
+  
+  .data-widget select:focus {
+    outline: none;
+    border-color: #007bff; /* Example focus color */
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Subtle focus shadow */
+  }
+  
+  .data-widget button.update-role-button,
+  .data-widget button.create-role-button {
+    background-color: #007bff; /* Modern primary color */
+    color: #fff;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 0.3rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+  }
+  
+  .data-widget button.update-role-button:hover,
+  .data-widget button.create-role-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .data-widget .current-roles-container {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #f8f9fa; /* Light background for the roles */
+    border-radius: 0.3rem;
+    border: 1px solid #eee;
+  }
+  
+  .data-widget .current-roles-container h4 {
+    margin-top: 0;
+    margin-bottom: 0.8rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .data-widget .role-badge {
+    display: inline-block;
+    padding: 0.5rem 0.8rem;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.3rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #fff; /* Default text color for badges */
+  }
+  
+  /* You can adjust the background colors for specific roles here */
+  .data-widget .role-badge.developer {
+    background-color: #6c757d; /* Example grey color */
+  }
+  
+  .data-widget .role-badge.admin {
+    background-color: #dc3545; /* Example red color */
+  }
+  
+  .data-widget .role-badge.producer {
+    background-color: #28a745; /* Example green color */
+  }
+  
+  .data-widget input[type="checkbox"] {
+    margin-right: 0.5rem;
+  }
+  .role-badge.producer {
+    /* fallback if no badge_color is set */
+    background-color: #43b581 !important;
+    box-shadow: 0 0 8px #43b58188, 0 0 2px #fff;
+    border: 1px solid #43b581;
+  }
+  .data-widget label[for^="remove-role-"] {
+    display: inline-block;
+    margin-right: 1rem;
+  }
+  
+  .data-widget button.delete-role-button {
+    background-color: #f44336; /* Modern delete button color */
+    color: #fff;
+    border: none;
+    padding: 0.3rem 0.8rem; /* Reduced padding for a smaller button */
+    border-radius: 0.3rem;
+    font-size: 0.8rem; /* Smaller font size */
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    margin-left: 0.5rem;
+    line-height: 1; /* Ensures text is centered properly */
+    display: inline-flex; /* Better alignment for icons or text */
+    align-items: center; /* Centers content vertically */
+    justify-content: center; /* Centers content horizontally */
+  }
+  
+  .data-widget button.delete-role-button:hover {
+    background-color: #d32f2f; /* Darker shade on hover */
+  }
+  
+  .data-widget .form-message {
+    margin-top: 1rem;
+    padding: 0.8rem 1.2rem;
+    border-radius: 0.3rem;
+    font-size: 0.9rem;
+  }
+  .data-widget .form-message.success {
+    background-color: #e6ffe6;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  .data-widget .form-message.error {
+    background-color: #ffe6e6;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+  
+  /* EVENT LIST CARD */
+  .event-list-card {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.3rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 1rem 1.2rem;
+    grid-column: 1 / -1; /* Full-width in the grid */
+  }
+  .event-list-card h3 {
+    margin: 0 0 0.8rem 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #343a40;
+  }
+  .event-list-card table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .event-list-card th,
+  .event-list-card td {
+    padding: 0.6rem;
+    border-bottom: 1px solid #dee2e6;
+    text-align: left;
+    font-size: 0.95rem;
+  }
+  .event-list-card .no-events {
+    text-align: center;
+    color: #6c757d;
+  }
+  .delete-button {
+    background-color: #dc3545;
+    border: none;
+    color: #fff;
+    padding: 0.5rem 0.8rem;
+    border-radius: 0.2rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .delete-button:hover {
+    background-color: #c82333;
+  }
+  
+  /* CREATE EVENT CARD */
+  .create-event-card {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.3rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 1rem 1.2rem;
+    grid-column: 1 / -1; /* Full-width in the grid */
+  }
+  .create-event-card h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.15rem;
+    color: #343a40;
+    font-weight: 600;
+  }
+  
+  /* Changelog Admin Section */
+  .changelog-admin .data-widget {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .changelog-admin h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #343a40;
+  }
+  
+  .changelog-admin .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .changelog-admin .form-group label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+    color: #495057;
+  }
+  
+  .changelog-admin .form-group input,
+  .changelog-admin .form-group textarea {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    width: 100%;
+  }
+  
+  .changelog-admin .form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+  
+  .changelog-admin button {
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  
+  .changelog-admin button:hover {
+    background-color: #218838;
+  }
+  
+  .changelog-admin .form-message {
+    margin-top: 1rem;
+    padding: 0.8rem 1.2rem;
+    border-radius: 0.3rem;
+    font-size: 0.9rem;
+  }
+  
+  .changelog-admin .form-message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  
+  .changelog-admin .form-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+  /* ===================== START Custom Checkbox Styling ===================== */
+  .custom-checkbox {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    font-size: 0.95rem;
+    user-select: none;
+  }
+  
+  .custom-checkbox input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #007bff;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease-in-out;
+    margin-right: 0.5rem;
+  }
+  
+  .custom-checkbox input[type="checkbox"]:checked {
+    background-color: #12d47a;
+    border-color: #0faf6d;
+  }
+  
+  .custom-checkbox input[type="checkbox"]::after {
+    content: '';
+    position: absolute;
+    display: none;
+    left: 5px;
+    top: 2px;
+    width: 4px;
+    height: 9px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  
+  .custom-checkbox input[type="checkbox"]:checked::after {
+    display: block;
+  }
+  /* ===================== END Custom Checkbox Styling ===================== */
+  
+  /* ========================= */
+  /* 1) Header with Title+Input */
+  /* ========================= */
+  
+  .existing-events-header{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  /* ========================= */
+  /* 1) Side bar grouping ;) */
+  /* ========================= */
+  .group-header {
+    cursor: pointer;
+    padding: 0.8rem 1rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .group-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 1.2rem;
+  }
+  .group-list li {
+    margin: 0;
+  }
+  .group-list li a {
+    display: block;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.2s;
+  }
+  .group-list li a:hover,
+  .group-list li a.active {
+    background-color: rgba(212, 17, 17, 0.479);
+  }
+  
+  /* optionally animate the open/close */
+  .group-list[style] {
+    transition: all 0.3s ease;
+  }
+  
+  /* ========================= */
+  /* 1) shop styling */
+  /* ========================= */
+  .shop-form input,
+  .shop-form select,
+  .shop-form button {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .shop-form {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 2fr 1fr; /* Adjust ratios for alignment */
+    gap: 0.5rem;
+  }
+  .shop-form input,
+  .shop-form select {
+    padding: 0.4rem 0.6rem;
+  }
+  
+  /* ========================= */
+  /* 2) Search Bar Input       */
+  /* ========================= */
+  
+  .search-input {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.9rem;
+    width: 200px;
+  }
+  
+  /* ========================= */
+  /* 3) Scrollable Table       */
+  /* ========================= */
+  
+  .table-container {
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+  }
+  /* You can reuse your existing th/td styles here or add them if needed */
+  .table-container th,
+  .table-container td {
+    padding: 0.6rem;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  /* Make the table fill the container width */
+  .tabel-container table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  /* FORM GRID */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+  .form-group label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+    color: #495057;
+  }
+  .form-group input[type="text"],
+  .form-group input[type="date"],
+  .form-group input[type="time"],
+  .form-group select,
+  .form-group textarea {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+  .form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .checkbox-group input[type="checkbox"] {
+    margin-right: 0.4rem;
+  }
+  .checkbox-group .checkbox-label {
+    font-size: 0.9rem;
+    color: #495057;
+  }
+  
+  /* CREATE BUTTON */
+  .create-event-button {
+    background-color: #28a745; 
+    color: #fff;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .create-event-button:hover {
+    background-color: #218838;
+  }
+  
+  /* FORM MESSAGE */
+  .form-message {
+    margin-top: 0.5rem;
+    padding: 0.6rem 1rem;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+  }
+  .form-message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  .form-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+  
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .admin-body-container {
+      flex-direction: column;
+      height: auto;
+    }
+    .admin-sidebar {
+      width: 100%;
+      border-bottom: 1px solid #ced4da;
+    }
+    .admin-content {
+      padding: 1rem;
+    }
+    .admin-content-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .content-area {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  /* ===================== START upcoming event list link styles ===================== */
+  .event-link {
+    text-decoration: none;
+    color: var(--primary);
+    padding: 0.5rem 0;
+    display: block;
+    transition: color 0.3s ease, background-color 0.3s ease;
+  }
+  
+  .event-link:hover {
+    color: var(--accent);
+    background-color: rgba(0, 0, 0, 0.4); 
+    backdrop-filter: blur(10px);
+    border-radius: 0.5rem;
+    border-bottom: none;
+  }
+  /* ===================== END upcoming event list link styles ===================== */
+  
+  /* ===================== MUSIC ADMIN (Consistent with Management Theme) ===================== */
+  .music-admin .data-widget {
+    /* Match the existing white widget style */
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    color: #343a40;
+    font-family: 'Roboto', sans-serif; /* Use a modern sans-serif to match your other widgets */
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Section Heading */
+  .music-admin .data-widget h3 {
+    color: #343a40;
+    text-transform: none;  /* Keep normal case if you want */
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+  
+  /* ===================== Playlist Table ===================== */
+  .music-admin .playlist-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+  }
+  
+  .music-admin .playlist-table th,
+  .music-admin .playlist-table td {
+    padding: 0.8rem;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .music-admin .playlist-table th {
+    background: #f8f9fa;
+    color: #343a40;
+    text-align: left;
+    font-weight: 600;
+  }
+  
+  .music-admin .playlist-table td {
+    color: #495057;
+  }
+  
+  .music-admin .playlist-table tr:hover {
+    background: #f8f9fa;
+  }
+  
+  /* ===================== Music Form Inputs ===================== */
+  /* Group each input with a label in a .form-group-music container */
+  .music-admin .form-group-music {
+    margin-bottom: 1rem;
+  }
+  
+  .music-admin .form-group-music label {
+    display: block;
+    color: #343a40;
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+  }
+  
+  .music-admin .form-group-music input {
+    background: #f8f9fa;
+    border: 1px solid #ced4da;
+    color: #495057;
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.25rem;
+    width: 100%;
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .music-admin .form-group-music input:focus {
+    outline: none;
+    background-color: #fff;
+    border-color: #dc3545; /* match your accent color if desired */
+    box-shadow: 0 0 5px rgba(220, 53, 69, 0.3);
+  }
+  
+  /* Placeholder styling */
+  .music-admin .form-group-music input::placeholder {
+    color: #6c757d;
+    font-style: italic;
+  }
+  
+  /* ===================== Delete Button ===================== */
+  .music-admin .delete-song {
+    background: #ff0055;
+    border: none;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+    font-family: 'Roboto Mono', monospace;
+    letter-spacing: 1px;
+  }
+  
+  .music-admin .delete-song:hover {
+    background: #cc0044;
+    box-shadow: 
+      0 0 10px #ff0055,
+      0 0 20px rgba(255, 0, 85, 0.5);
+  }
+  
+  /* ===================== Optional Subtle Overlay ===================== */
+  /* If you want a very subtle pattern, lighten it to keep the white aesthetic. */
+  .music-admin .data-widget::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: radial-gradient(
+      circle,
+      rgba(0, 0, 0, 0.02) 10%,
+      transparent 10.01%
+    );
+    background-size: 20px 20px;
+    pointer-events: none;
+    opacity: 0.3; /* Keep it subtle for a professional feel */
+  }
+  
+  .maintenance-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .message-input-container {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  
+  .message-input-container input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+  }
+  
+  .update-message-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+  }
+  
+  .update-message-button:hover:not(:disabled) {
+    background-color: #218838;
+  }
+  
+  .update-message-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+  }
+  
+  .message-hint {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: #6c757d;
+  }
+  
+  :root.dark-mode .message-hint {
+    color: #adb5bd;
+  }
+  
+  :root.dark-mode .message-input-container input {
+    background-color: var(--input-bg);
+    color: var(--text);
+    border-color: var(--border-color);
+  }
+  
+  :root.dark-mode .update-message-button {
+    background-color: #28a745;
+  }
+  
+  :root.dark-mode .update-message-button:hover:not(:disabled) {
+    background-color: #218838;
+  }
+  
+  /* Team Manager Styles */
+  .team-manager .data-widget {
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  .team-members-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .team-member-card {
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .member-avatar {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+  }
+  
+  .member-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  
+  .change-avatar-btn {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  
+  .member-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .member-info input,
+  .member-info textarea {
+    padding: 0.5rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+  }
+  
+  .member-info textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+  
+  .member-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+  
+  .save-btn,
+  .delete-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  
+  .save-btn {
+    background: #28a745;
+    color: white;
+  }
+  
+  .delete-btn {
+    background: #dc3545;
+    color: white;
+  }
+  
+  .add-member-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .add-member-btn:hover {
+    background: #0056b3;
+  }
+  
+  .roles-section {
+    margin-top: 2rem;
+  }
+  
+  .roles-section h3 {
+    margin-bottom: 1.2rem;
+  }
+  
+  .no-roles {
+    color: #888;
+    margin-bottom: 1rem;
+  }
+  
+  .roles-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .role-card {
+    display: flex;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 0.4rem;
+    padding: 0.6rem 1.2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s;
+  }
+  
+  .role-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  }
+  
+  .role-badge {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #fff;
+    border-radius: 0.3rem;
+    padding: 0.4rem 1rem;
+    margin-right: 1rem;
+    min-width: 90px;
+    justify-content: center;
+    box-shadow: 0 0 6px rgba(0,0,0,0.07);
+  }
+  
+  .delete-role-button {
+    background: #f44336;
+    color: #fff;
+    border: none;
+    border-radius: 0.3rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+  }
+  
+  .delete-role-button:hover {
+    background: #d32f2f;
+  }
+  
+  .data-widget create-role-widget {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .create-role-widget h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #343a40;
+  }
+  
+  .create-role-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+  
+  .create-role-form .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .create-role-form .form-group label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+    color: #343a40;
+  }
+  
+  .create-role-form .form-group input {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .create-role-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  
+  .create-role-button:hover {
+    background-color: #218838;
+  }
+  
+  .create-role-message {
+    margin-top: 0.5rem;
+    padding: 0.6rem 1rem;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+  }
+  
+  .create-role-message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  
+  .create-role-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+  
+  .create-role-widget {
+    max-width: 500px;
+    margin-bottom: 2rem;
+  }
+  
+  .create-role-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+  
+  .create-role-form .form-group label {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+    color: #343a40;
+  }
+  
+  .create-role-form .form-group input {
+    border: 1.5px solid #e0e0e0;
+    border-radius: 0.4rem;
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
+    background: #f8f9fa;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  
+  .create-role-form .form-group input:focus {
+    outline: none;
+    border-color: #007bff;
+    background: #fff;
+    box-shadow: 0 0 0 2px #007bff22;
+  }
+  
+  .create-role-button {
+    width: 100%;
+    padding: 0.9rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 0.4rem;
+    background: linear-gradient(90deg, #007bff 60%, #0056b3 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,123,255,0.08);
+    transition: background 0.2s, box-shadow 0.2s;
+    margin-top: 0.5rem;
+  }
+  
+  .create-role-button:hover,
+  .create-role-button:focus {
+    background: linear-gradient(90deg, #0056b3 60%, #007bff 100%);
+    box-shadow: 0 4px 16px rgba(0,123,255,0.15);
+  }
+  
+  /* Remove bulletpoints and style roles list */
+  .roles-list-flex {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .role-list-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .delete-role-button {
+    background-color: #f44336;
+    color: #fff;
+    border: none;
+    padding: 0.3rem 0.8rem;
+    border-radius: 0.3rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    margin-left: 0.5rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .delete-role-button:hover {
+    background-color: #d32f2f;
+  }
+  
+  /* Add these to your existing <style> section */
+  .drag-handle {
+    cursor: grab;
+    color: #666;
+    text-align: center;
+    user-select: none;
+    width: 30px;
+    padding: 0 8px;
+  }
+  
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+  
+  /* Optional: Add a hover effect to the draggable rows */
+  .playlist-table tr:hover {
+    background-color: #f8f9fa;
+  }
+  
+  /* Optional: Add transition for smooth dragging */
+  .playlist-table tr {
+    transition: background-color 0.2s ease;
+  }
+  
+  .flip-list-move {
+    transition: transform 0.3s ease;
+  }
+  
+  .drag-handle {
+    cursor: grab;
+    color: #666;
+    text-align: center;
+    user-select: none;
+    width: 30px;
+    padding: 0 8px;
+  }
+  
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+  
+  .playlist-table tr {
+    transition: background-color 0.2s ease;
+  }
+  
+  .playlist-table tr:hover {
+    background-color: #f8f9fa;
+  }
+  
+  /* Add these styles for Sortable.js */
+  .sortable-ghost {
+    opacity: 0.3;
+    background: #c8ebfb;
+    border-radius: 4px;
+  }
+  
+  .sortable-drag {
+    opacity: 0.9;
+    transform: scale(1.05);
+    background: white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    z-index: 1000;
+  }
+  
+  .highlighted {
+    background-color: #f0f9ff !important;
+    box-shadow: inset 0 0 0 2px #2196F3;
+  }
+  
+  .drag-handle {
+    cursor: grab;
+    color: #666;
+    font-size: 18px;
+    padding: 0 10px;
+    text-align: center;
+    vertical-align: middle;
+    user-select: none;
+  }
+  
+  .drag-handle:hover {
+    color: #2196F3;
+  }
+  
+  /* Improve the look of table rows when being dragged */
+  .playlist-table tr, .events-table tr {
+    transition: all 0.2s ease;
+    background: white;
+  }
+  
+  .playlist-table tr:hover, .events-table tr:hover {
+    background-color: #f5f5f5;
+  }
+
+  @media (max-width: 800px) {
+    .content-area {
+      grid-template-columns: 1fr;
+    }
+  }

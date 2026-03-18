@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: mental-pasienter-backend
+    runtime: python
+    rootDir: Backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: DATABASE_URI
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: MAILERSEND_SERVER
+        sync: false
+      - key: MAILERSEND_PORT
+        sync: false
+      - key: MAILERSEND_USE_TLS
+        sync: false
+      - key: MAILERSEND_USERNAME
+        sync: false
+      - key: MAILERSEND_PASSWORD
+        sync: false
+      - key: MAILERSEND_DEFAULT_SENDER
+        sync: false
+      - key: SUPPORT_SERVER
+        sync: false
+      - key: SUPPORT_PORT
+        sync: false
+      - key: SUPPORT_USE_TLS
+        sync: false
+      - key: SUPPORT_USERNAME
+        sync: false
+      - key: SUPPORT_PASSWORD
+        sync: false
+      - key: SUPPORT_DEFAULT_SENDER
+        sync: false

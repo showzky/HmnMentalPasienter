@@ -1,16 +1,16 @@
 <template>
-    <div>
+  <div>
+    <HomeLoggedIn v-if="auth.isAuthenticated" :user="auth.user" />
+
+    <div v-else>
       <!-- Hero Section -->
       <div class="hero">
         <h1>HMN Mental Pasienter</h1>
         <p class="slogan">Profesjonelle uansvarlige siden 2024</p>
       </div>
-  
+
+      <!-- Timeline Section -->
       <div class="hero">
-       
-       
-  
-        <!-- Timeline Section -->
         <div class="timeline-meme">
           <div class="timeline-item">
             <div class="timeline-emoji">🎉</div>
@@ -19,7 +19,6 @@
               <p>"Vi møttes faktisk først i 2024 alle sammen face to face" - Thomas, probably</p>
             </div>
           </div>
-  
           <div class="timeline-item discord-highlight">
             <div class="timeline-emoji">🎮</div>
             <div class="timeline-text">
@@ -28,9 +27,9 @@
                 Hovedkvarter for:
                 <br />
                 <span class="discord-activities">
-                  Vi for sjå ka æ ska skriv hær🗿
+                  Memes å gode samtaler seriøse samtaler  🗿 av og til xD 
                   <br />
-                  Noen ord hær å vett🍕
+                  velkommen skarru være🍕
                 </span>
               </p>
               <button class="discord-btn" @click="openDiscord">
@@ -40,7 +39,7 @@
           </div>
         </div>
       </div>
-  
+
       <!-- Meeting Section -->
       <section class="meeting-section">
         <h2>🏔️ Historisk Øyeblikk</h2>
@@ -55,21 +54,31 @@
         </div>
       </section>
     </div>
-  </template>
-  
-  <script>
-  export default {
-    name: 'Home',
-    methods: {
-      openDiscord() {
-        window.open('YOUR_DISCORD_INVITE_LINK', '_blank');
-      }
+  </div>
+</template>
+
+<script>
+import HomeLoggedIn from '@/components/HomeLoggedIn.vue';
+import { useAuthStore } from '@/stores/authStore';
+export default {
+  name: 'Home',
+  components: {
+    HomeLoggedIn
+  },
+  setup() {
+    const auth = useAuthStore();
+    return { auth };
+  },
+  methods: {
+    openDiscord() {
+      window.open('https://discord.gg/z8XkcvtaRs', '_blank');
     }
-  };
-  </script>
-  
-  <style scoped>
-  /* Optional - Keep global styles in your main `style.css` file */
-  /* Add any section-specific tweaks here if necessary */
-  </style>
+  }
+};
+</script>
+
+<style scoped>
+/* Optional - Keep global styles in your main `style.css` file */
+/* Add any section-specific tweaks here if necessary */
+</style>
   

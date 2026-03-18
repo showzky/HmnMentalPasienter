@@ -11,6 +11,21 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
+!.env.development.example
+!.env.production.example
+Backend/.env.backend.development
+Backend/.env.backend.production
+!Backend/.env.backend.development.example
+!Backend/.env.backend.production.example
+Backend/venv/
+Backend/__pycache__/
+Backend/migrations/**/__pycache__/
+*.pyc
+Backend/*.log
+Backend/test_email*.log
+Backend/app_debug.log
 
 # Editor directories and files
 .vscode/*

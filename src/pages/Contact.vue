@@ -57,7 +57,7 @@
   
   <script setup>
   import { ref } from 'vue'
-  import axios from '@/axios' // ⬅️ Make sure this works or adjust if needed
+  import axios from '@/axios' 
   
   const form = ref({ name: '', email: '', message: '' })
   const submitted = ref(false)
@@ -71,7 +71,7 @@
       setTimeout(() => {
         form.value = { name: '', email: '', message: '' }
         submitted.value = false
-      }, 3000)
+      }, 5000) // 5 seconds 
     } catch (error) {
       console.error('Failed to send message:', error)
       alert('❌ Failed to send message. Please try again later.')

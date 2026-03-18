@@ -2,6 +2,7 @@
 /* GLOBAL STYLES */
 /* ======================= */
 /* Default Light Mode Colors */
+@import 'tailwindcss';
 :root {
     --bg-color: #f0f8ff;
     --text-color: #2c3e50;
@@ -666,37 +667,153 @@ body {
     margin-top: 2rem; /* Reduced margin */
 }
 
-.timeline-item {
+/* Styles for ALL individual timeline items */
+/* Container for timeline items - add this if you don't have it */
+.timeline-container {
     display: flex;
-    align-items: start;
-    gap: 1rem; /* Reduced gap */
-    background: rgba(255,255,255,0.9);
-    padding: 1rem; /* Reduced padding */
-    border-radius: 15px;
-    border: 2px dashed #3498db; /* Thinner border */
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem 1rem;
+  }
+  
+  /* Enhanced timeline items */
+  .timeline-item {
+    background: #fff;
+    border-radius: 14px;
+    border: 2px dashed #4da6ff;
+    padding: 1rem;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+/* Hover effect to lift the card */
+.timeline-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
+/* Discord highlight section refinement */
 .discord-highlight {
-    background: #5865F2;
+  background: #5c6eff;
+  color: white;
+  border-radius: 16px;
+  padding: 1.2rem 1rem;
+  border: 2px solid #4752c4;
+  box-shadow: 0 4px 10px rgba(88, 101, 242, 0.25);
+  text-align: center;
+}
+  
+  .discord-highlight .timeline-text h3,
+  .discord-highlight .timeline-text p,
+  .discord-highlight .discord-activities {
     color: white;
-    border-style: solid;
-}
-
-.discord-activities {
+  }
+  
+  /* Centered text container */
+  .timeline-text {
+    flex: 2;
+    text-align: center; /* Actual text centering */
+    padding: 0 1rem;
+  }
+  
+  .timeline-text h3 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.3rem;
+    line-height: 1.3;
+    color: #2c3e50;
+  }
+  .timeline-text p {
+    margin: 0 0 1rem;
+    line-height: 1.6;
+  }
+  
+  /* Improved Discord activities list */
+  .discord-activities {
     font-size: 0.9em;
-    opacity: 0.8;
-    margin: 0.5rem 0;
+    opacity: 0.9;
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+    list-style-type: none;
+  }
+  
+  .discord-activities li::before {
+    content: "•";
+    color: white;
+    display: inline-block;
+    width: 1em;
+    margin-left: -1em;
+  }
+  
+  /* Enhanced button styling */
+  .discord-btn {
+    margin-top: 1rem;
+    padding: 0.85rem 1.4rem;
+    background: white;
+    color: #5c6eff;
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .discord-btn:hover {
+    background: #eef0ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Emoji styling */
+  .timeline-emoji {
+    font-size: 2rem;
+    flex-shrink: 0;
+    width: auto;
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Responsive adjustments */
+@media (max-width: 768px) {
+  .timeline-item {
+    width: 95%;
+    padding: 1rem 1.2rem; /* tighten padding */
+    gap: 0.75rem;         /* slightly reduce gap */
+    border-radius: 12px;  /* smaller corner radius */
+  }
+
+  .timeline-emoji {
+    font-size: 1.3rem; /* was 1.5rem */
+    width: auto;       /* remove fixed width for better centering */
+    margin-bottom: 0.5rem;
+  }
+
+  .timeline-text {
+    text-align: center;
+  }
+
+  .timeline-text h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.2rem; /* shrink heading */
+    line-height: 1.3;
+  }
+
+  .timeline-text p {
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .discord-btn {
+    padding: 0.65rem 1.1rem; /* tighten button */
+    font-size: 0.9rem;
+    border-radius: 8px;
+  }
 }
 
-.discord-btn {
-    background: white;
-    color: #5865F2;
-    border: none;
-    padding: 0.75rem 1.25rem; /* Reduced padding */
-    border-radius: 8px;
-    margin-top: 0.75rem; /* Reduced margin */
-    cursor: pointer;
-}
 
 /* ======================= */
 /* MEETING SECTION */

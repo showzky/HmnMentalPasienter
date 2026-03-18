@@ -1,12 +1,12 @@
 # -------------------------
 # Import Libraries and Modules
 # -------------------------
-import eventlet
-eventlet.monkey_patch()
+#import eventlet
+#eventlet.monkey_patch()
 
 from dotenv import load_dotenv
 import os
-from flask import Flask, request, jsonify, redirect, url_for, session
+from flask import Flask, request, jsonify, redirect, url_for, session, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from datetime import datetime, timezone, timedelta
@@ -23,6 +23,9 @@ import mimetypes
 from authlib.integrations.flask_client import OAuth
 from flask_mail import Mail, Message
 from enum import Enum
+import defusedxml.ElementTree as ET
+import json
+from pathlib import Path
 
 # In-memory store for playlist data
 playlist_data = []
@@ -33,11 +36,11 @@ import cloudinary.uploader
 # Removed unused import: cloudinary.api
 
 # -------------------------
-# Friend request system for adding friends (like Facebook)
+# Game Achievements 
 # -------------------------
-
-# The FriendRequest and Friendship functionality is already implemented in the code.
-# No additional code is needed here.
+GAME_ACHIEVEMENTS_PATH = Path(__file__).parent / 'clicker_achievements.json'
+with open(GAME_ACHIEVEMENTS_PATH, 'r', encoding='utf-8') as f:
+    GAME_ACHIEVEMENTS = json.load(f)
 
 # -------------------------
 # Load Backend Environment Variables
@@ -50,12 +53,12 @@ else:
     env_file = os.path.join(os.path.dirname(__file__), '.env.backend.development')
 
 load_dotenv(env_file)
-print("Loaded MAIL_USERNAME:", os.getenv("MAIL_USERNAME"))
+print("Loaded MAILERSEND_USERNAME:", os.getenv("MAILERSEND_USERNAME"))
 
 # -------------------------
 # Initialize Flask App
 # -------------------------
-app = Flask(__name__, static_folder="/var/www/Backend/static", static_url_path="/static")
+app = Flask(__name__, static_folder="/var/www/Backend/static", static_url_path="/static") 
 app.secret_key = os.urandom(24)
 
 # Set maximum file upload size to 5MB
@@ -84,10 +87,14 @@ app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 # -------------------------
 # Application Configuration for Database and JWT
 # -------------------------
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
-    'DATABASE_URI',
-    'mysql+mysqlconnector://root:RWrUAT77pKvixsC2AQY3@localhost/hmnmentalpasienter'
-)
+database_uri = os.getenv('DATABASE_URI')
+if not database_uri:
+    raise RuntimeError(
+        "DATABASE_URI is not configured. Set it in Backend/.env.backend.development for local "
+        "development or in your production environment variables."
+    )
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-secret-key')
 
@@ -101,34 +108,62 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # -------------------------
 # Flask-Mail Configuration
 # -------------------------
-app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.mailersend.net')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587'))
-app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'MS_TS4k3S@hmnmentalpasienter.no')
-app.config['MAIL_DEBUG'] = True
 
-print("MAIL_SERVER:", app.config['MAIL_SERVER'])
-print("MAIL_PORT:", app.config['MAIL_PORT'])
-print("MAIL_USE_TLS:", app.config['MAIL_USE_TLS'])
-print("MAIL_USERNAME:", app.config['MAIL_USERNAME'])
+# MailerSend config
+mailer_send_config = {
+    'MAIL_SERVER': os.getenv('MAILERSEND_SERVER', 'smtp.mailersend.net'),
+    'MAIL_PORT': int(os.getenv('MAILERSEND_PORT', '2525')),
+    'MAIL_USE_TLS': os.getenv('MAILERSEND_USE_TLS', 'true').lower() == 'true',
+    'MAIL_USERNAME': os.getenv('MAILERSEND_USERNAME'),
+    'MAIL_PASSWORD': os.getenv('MAILERSEND_PASSWORD'),
+    'MAIL_DEFAULT_SENDER': os.getenv('MAILERSEND_DEFAULT_SENDER', 'MS_TS4k3S@hmnmentalpasienter.no'),
+    'MAIL_DEBUG': True
+}
 
-# -------------------------
-# Initialize Flask-Mail
-# -------------------------
+# Support email config
+support_config = {
+    'MAIL_SERVER': os.getenv('SUPPORT_SERVER', 'mail.hmnmentalpasienter.no'),
+    'MAIL_PORT': int(os.getenv('SUPPORT_PORT', '587')),
+    'MAIL_USE_TLS': os.getenv('SUPPORT_USE_TLS', 'true').lower() == 'true',
+    'MAIL_USERNAME': os.getenv('SUPPORT_USERNAME'),
+    'MAIL_PASSWORD': os.getenv('SUPPORT_PASSWORD'),
+    'MAIL_DEFAULT_SENDER': os.getenv('SUPPORT_DEFAULT_SENDER', 'support@hmnmentalpasienter.no'),
+    'MAIL_DEBUG': True
+}
+
+# Initialize Flask-Mail with the main app config (default could be MailerSend or Support)
+app.config.update(mailer_send_config)  # Set MailerSend or Support as default
 mail = Mail(app)
+
+# -------------------------
+# Functions to Switch Configs Dynamically
+# -------------------------
+
+def switch_mail_config(config):
+    """Helper to switch mail config dynamically"""
+    app.config.update(config)
+    mail.init_app(app)  # Reinitialize Mail with the new config
 
 import logging
 import os
 
 logger = logging.getLogger("test_email")
 
-# Dynamic log path based on environment
-default_log_path = "/var/www/Backend/test_email.log"
-local_log_path = os.path.join(os.getcwd(), "test_email_local.log")
+def get_dynamic_log_path():
+    # 1. Use ENV if explicitly set
+    log_path_env = os.getenv('APP_LOG_PATH')
+    if log_path_env:
+        return log_path_env
 
-log_path = default_log_path if os.path.exists("/var") else local_log_path
+    # 2. Otherwise, dynamic based on FLASK_ENV
+    if os.getenv("FLASK_ENV") == "production":
+        return "/var/www/Backend/test_email.log"
+    else:
+        # Use the project directory in development!
+        return os.path.join(os.path.dirname(__file__), "test_email.log")
+
+log_path = get_dynamic_log_path()
+os.makedirs(os.path.dirname(log_path), exist_ok=True)
 
 # Ensure the directory exists
 os.makedirs(os.path.dirname(log_path), exist_ok=True)
@@ -163,18 +198,19 @@ def test_email():
     return "✅ Email is being sent asynchronously!"
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+def sanitize_svg(svg_data):
+    try:
+        # Parse the SVG data
+        tree = ET.fromstring(svg_data)
+        # Optionally, check for forbidden tags/attributes here
+        # For example, block <script> tags
+        for elem in tree.iter():
+            if elem.tag.endswith('script'):
+                raise ValueError("SVG contains forbidden <script> tag")
+        # If it parses and passes checks, return the original data
+        return svg_data
+    except Exception as e:
+        raise ValueError(f"Invalid or unsafe SVG: {e}")
 
 
 
@@ -333,6 +369,11 @@ class User(db.Model):
     roles = db.relationship('Role', secondary=user_roles, backref=db.backref('users', lazy=True))
     krenke_level = db.Column(db.Float, default=0)
     fitte_points = db.Column(db.Integer, default=0)
+    last_daily_reward_claim = db.Column(db.DateTime, nullable=True)
+    daily_claim_count = db.Column(db.Integer, default=0)
+    last_login_date = db.Column(db.Date, nullable=True)
+    login_streak = db.Column(db.Integer, default=0)
+
 
 
     def __repr__(self):
@@ -362,6 +403,7 @@ def set_setting(key, value):
         setting = Setting(key=key, value=value)
         db.session.add(setting)
     db.session.commit()
+
 
 
 #Socket
@@ -498,6 +540,7 @@ class Song(db.Model):
     cover = db.Column(db.String(255), nullable=True)          # New column for cover image URL
     soundcloudUrl = db.Column(db.String(255), nullable=True)   # New column for SoundCloud URL
     upload_timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    position = db.Column(db.Integer, default=0)
 
 
     def __repr__(self):
@@ -511,6 +554,7 @@ class Activity(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     activity_type = db.Column(db.String(50), nullable=False) # e.g., 'dashboard_visit'
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    duration_seconds = db.Column(db.Integer, default=0)
 
     # Relationship to the User model
     user = db.relationship('User', lazy=True, foreign_keys=[user_id])
@@ -607,6 +651,97 @@ class Event(db.Model):
 
     def __repr__(self):
         return f'<Event {self.id} - {self.event_name}>'
+
+class ShopItem(db.Model):
+    __tablename__ = 'shop_items'
+
+    id          = db.Column(db.Integer, primary_key=True)
+    name        = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    price       = db.Column(db.Integer, nullable=False, default=0)
+    icon = db.Column(db.Text, nullable=True)
+    rarity = db.Column(db.String(50), nullable=True)
+    glow_color = db.Column(db.String(50), nullable=True)
+    type        = db.Column(db.Enum('badge', 'theme', name='shop_item_type'),
+                            nullable=False, default='badge')
+    created_at  = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def __repr__(self):
+        return f'<ShopItem {self.id} – {self.name} ({self.type})>'
+
+class UserShopItem(db.Model):
+    __tablename__ = 'user_shop_items'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    item_id = db.Column(
+    db.Integer,
+    db.ForeignKey('shop_items.id', ondelete='CASCADE'),
+    nullable=False
+)
+    purchased_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = db.relationship('User', backref='purchased_items')
+    item = db.relationship(
+    'ShopItem',
+    backref=db.backref('purchases', cascade='all, delete-orphan')
+)
+
+from datetime import datetime
+
+class UserAchievement(db.Model):
+    __tablename__ = 'user_achievements'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    achievement_id = db.Column(db.String(64), db.ForeignKey('achievements.id'), nullable=False)
+    unlocked_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user = db.relationship('User', backref='user_achievements')
+    achievement = db.relationship('Achievement', backref='user_achievements')
+    unlocked = db.Column(db.Boolean, default=True)
+
+
+class Achievement(db.Model):
+    __tablename__ = 'achievements'
+    id = db.Column(db.String(64), primary_key=True)  
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    icon = db.Column(db.Text, nullable=True)  # SVG, emoji, Cloudinary link, etc
+    rarity = db.Column(db.String(50), nullable=True)
+    glow_color = db.Column(db.String(50), nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    condition_type = db.Column(db.String(64), nullable=True)
+    condition_value = db.Column(db.Integer, nullable=True)
+
+
+
+#Changelog model
+class Changelog(db.Model):
+    __tablename__ = 'changelog'
+    id = db.Column(db.Integer, primary_key=True)
+    version = db.Column(db.String(50), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    added = db.Column(db.Text, nullable=True)  # List of added features (stored as text)
+    changed = db.Column(db.Text, nullable=True)  # List of changes (stored as text)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "version": self.version,
+            "date": self.date.isoformat(),
+            "added": self.added.split('\n') if self.added else [],
+            "changed": self.changed.split('\n') if self.changed else []
+        }
+#News Model
+class News(db.Model):
+    __tablename__ = 'news'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Relationship to User model
+    user = db.relationship('User', backref=db.backref('news_posts', lazy=True))
+
 
 
 @app.before_request
@@ -784,10 +919,25 @@ def login():
     user = User.query.filter_by(email=email).first()
     if not user or not user.check_password(password):
         return jsonify({"msg": "Invalid credentials"}), 401
-    
-        # Set the user_id in the session
-    session['user_id'] = user.id
+    #  # Update login streak here:
+    today = datetime.now(timezone.utc).date()  # timezone aware
+    if user.last_login_date == today:
+        # Already logged in today, no change
+        pass
+    elif user.last_login_date == today - timedelta(days=1):
+        # Continued streak
+        user.login_streak = (user.login_streak or 0) + 1
+        user.last_login_date = today
+    else:
+        # Streak broken or first login
+        user.login_streak = 1
+        user.last_login_date = today
 
+    check_and_unlock_login_streak_achievements(user)
+
+    db.session.commit()
+
+    
     access_token = create_access_token(identity=str(user.id))
     refresh_token = create_refresh_token(identity=str(user.id))
     
@@ -804,6 +954,18 @@ def login():
             "roles": [{"id": role.id, "name": role.name} for role in user.roles]
         }
     }), 200
+def check_and_unlock_login_streak_achievements(user):
+    achievements = Achievement.query.filter_by(condition_type='login_streak').all()
+    for ach in achievements:
+        if user.login_streak >= ach.condition_value:
+            unlocked = UserAchievement.query.filter_by(user_id=user.id, achievement_id=ach.id).first()
+            if not unlocked:
+                new_unlock = UserAchievement(
+                    user_id=user.id,
+                    achievement_id=ach.id,
+                    unlocked_at=datetime.now(timezone.utc)
+                )
+                db.session.add(new_unlock)
 
 
 # Refresh Endpoint: /api/refresh
@@ -851,28 +1013,44 @@ def update_profile():
     }), 200
 
 # Api for sending message 
+from flask_mail import Mail, Message
+
 @app.route('/api/send-message', methods=['POST'])
 def send_message():
     data = request.get_json()
-    name = data.get("name")
-    email = data.get("email")
+    name    = data.get("name")
+    email   = data.get("email")
     message = data.get("message")
+
     if not name or not email or not message:
         return jsonify({"msg": "Missing name, email or message"}), 400
-    
+
+    # ——— Create a temporary mailer bound to your support SMTP ———
+    temp_mail = Mail()
+    app.config.update(support_config)
+    temp_mail.init_app(app)
+
+    # ——— Build the message, force sender to your support address ———
     msg = Message(
         subject=f"New Contact Form Submission from {name}",
-        sender=email,
-        recipients=["support@hmnmentalpasienter.no"], # Replace with your email
-        body=f"Name: {name}\nEmail: {email}\nMessage: {message}"
+        sender='support@hmnmentalpasienter.no',        
+        recipients=['support@hmnmentalpasienter.no'],  
+        reply_to=email,                                
+        body=(
+            f"Name: {name}\n"
+            f"Email: {email}\n\n"
+            f"Message:\n{message}"
+        )
     )
 
     try:
-        mail.send(msg)
+        temp_mail.send(msg)
         return jsonify({"msg": "Message sent successfully"}), 200
     except Exception as e:
-        app.logger.error(f"Error sending email: {e}")
+        app.logger.error("Error sending support email: %s", e)
         return jsonify({"msg": "Failed to send message"}), 500
+
+
     
 
 # Upload Avatar Endpoint: /api/upload-avatar
@@ -1511,32 +1689,160 @@ def upload_banner():
         return jsonify({"msg": "Banner upload failed"}), 500
 
 
+# -------------------------------
+# GET all news items (optional JWT)
+# -------------------------------
+@app.route('/api/news', methods=['GET'])
+@jwt_required(optional=True)  # Allows both guest and logged-in users
+def get_news():
+    try:
+        news_items = News.query.order_by(News.date.desc()).all()
+        data = [{
+            'id': item.id,
+            'title': item.title,
+            'content': item.content,
+            'date': item.date.isoformat()
+        } for item in news_items]
+
+        response = make_response(jsonify(data))
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# -------------------------------
+# POST a news item
+# -------------------------------
+@app.route('/api/news', methods=['POST'])
+@jwt_required()
+def create_news():
+    print("RAW HEADERS:", request.headers)
+    print("JWT Identity:", get_jwt_identity())
+    data = request.get_json()
+    current_user_id = get_jwt_identity()
+
+    news_item = News(
+        title=data['title'],
+        content=data['content'],
+        user_id=current_user_id
+    )
+
+    db.session.add(news_item)
+    db.session.commit()
+
+    return jsonify({
+        'id': news_item.id,
+        'title': news_item.title,
+        'content': news_item.content,
+        'date': news_item.date.isoformat(),
+        'user': {
+            'id': news_item.user.id,
+            'username': news_item.user.username
+        }
+    }), 201
+
+
+# -------------------------------
+# PUT (Update) a news item
+# -------------------------------
+@app.route('/api/news/<int:news_id>', methods=['PUT'])
+@jwt_required()
+def update_news(news_id):
+    data = request.get_json()
+    current_user_id = get_jwt_identity()
+
+    news_item = News.query.get_or_404(news_id)
+
+    if news_item.user_id != current_user_id:
+        return jsonify({'message': 'Unauthorized'}), 403
+
+    news_item.title = data.get('title', news_item.title)
+    news_item.content = data.get('content', news_item.content)
+
+    db.session.commit()
+
+    return jsonify({
+        'id': news_item.id,
+        'title': news_item.title,
+        'content': news_item.content,
+        'date': news_item.date.isoformat(),
+        'user': {
+            'id': news_item.user.id,
+            'username': news_item.user.username
+        }
+    })
+
+
+# -------------------------------
+# DELETE a news item
+# -------------------------------
+@app.route('/api/news/<int:news_id>', methods=['DELETE'])
+@jwt_required()
+def delete_news(news_id):
+    try:
+        current_user_id = int(get_jwt_identity())  # Ensure integer
+        user = User.query.get(current_user_id)
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+
+        news_item = News.query.get_or_404(news_id)
+
+        # Only allow author or admin
+        if news_item.user_id != user.id and not user.has_role(['admin']):
+            return jsonify({'message': 'Unauthorized'}), 403
+
+        db.session.delete(news_item)
+        db.session.commit()
+
+        return jsonify({'message': 'News item deleted successfully'}), 200
+
+    except Exception as e:
+        print(f"🔥 DELETE /api/news/{news_id} failed:", e)
+        return jsonify({'message': 'Internal server error'}), 500
+
+
+
+
 # EndPoint to track dashboard visits
 @app.route('/api/track-dashboard-visit', methods=['POST'])
 @jwt_required()
 def track_dashboard_visit():
     current_user_id = get_jwt_identity()
-    new_activity = Activity(user_id=int(current_user_id), activity_type='dashboard_visit') # <-- Changed to 'activity_type' (lowercase 't')
+    data = request.get_json() or {}
+    seconds = int(data.get('seconds', 60))  # Default to 60 if not provided
+    new_activity = Activity(
+        user_id=int(current_user_id),
+        activity_type='dashboard_visit',
+        duration_seconds=seconds,
+        timestamp=datetime.now(timezone.utc)
+    )
     db.session.add(new_activity)
     db.session.commit()
-    return jsonify({"msg": "Dashboard visit tracked"}), 201
+    return jsonify({"msg": "Dashboard activity tracked"}), 201
 
-# Endpoint to get weekly dashboard activity
+# Todo: update this logic to show activity based on hours
 @app.route('/api/get-weekly-activity', methods=['GET'])
 @jwt_required()
 def get_weekly_activity():
     current_user_id = get_jwt_identity()
     today = datetime.now(timezone.utc)
-    start_of_week = today - timedelta(days=today.weekday()) # Monday this week
-    start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0) # set time to midnight
+    start_of_week = today - timedelta(days=today.weekday())
+    start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    weekly_visits_count = Activity.query.filter(
+    # Sum duration_seconds for this week
+    total_seconds = db.session.query(
+        db.func.sum(Activity.duration_seconds)
+    ).filter(
         Activity.user_id == int(current_user_id),
         Activity.activity_type == 'dashboard_visit',
         Activity.timestamp >= start_of_week
-    ).count()
+    ).scalar() or 0
 
-    return jsonify({"weekly_visits": weekly_visits_count}), 200
+    total_hours = round(total_seconds / 3600, 2)
+    return jsonify({"weekly_hours": total_hours}), 200
 
 @app.route('/api/get-notifications', methods=['GET'])
 @jwt_required()
@@ -1744,6 +2050,10 @@ def delete_event(event_id):
 
 
 
+
+
+
+
 # ===================== START get_krenke_level ENDPOINT =====================
 @app.route('/api/get-krenke-level', methods=['GET'])
 @jwt_required()
@@ -1781,6 +2091,9 @@ def update_krenke_level():
     db.session.commit()
     return jsonify({"msg": "Krenke level updated", "level": user.krenke_level}), 200
 # ===================== END update_krenke_level ENDPOINT =====================
+
+
+
 
 # ===================== START update_user_role ENDPOINT =====================
 @app.route('/api/update-user-role', methods=['PUT'])
@@ -2030,28 +2343,123 @@ def get_fitte_points():
         return jsonify({"msg": "User not found"}), 404
     return jsonify({"points": user.fitte_points}), 200
 
+@app.route('/api/get-daily-claim-status', methods=['GET'])
+@jwt_required()
+def get_daily_claim_status():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+        
+    now = datetime.now(timezone.utc)
+
+    if user.last_daily_reward_claim:
+        last_claim = user.last_daily_reward_claim
+        if last_claim.tzinfo is None:
+            last_claim = last_claim.replace(tzinfo=timezone.utc)
+        next_claim_time = last_claim + timedelta(days=1)
+    else:
+        next_claim_time = now
+
+    daily_claimed = user.last_daily_reward_claim is not None and now < next_claim_time
+
+    return jsonify({
+        "dailyClaimed": daily_claimed,
+        "nextClaimTime": next_claim_time.isoformat()
+    }), 200
+
+
 # POST update fitte_points in User table
+from datetime import datetime, timezone, timedelta
+
 @app.route('/api/update-fitte-points', methods=['POST'])
 @jwt_required()
 def update_fitte_points():
     user_id = get_jwt_identity()
     data = request.get_json()
     new_points = data.get("points")
-
+    is_daily_reward = data.get("is_daily_reward", False)
+    
     if not isinstance(new_points, int):
         return jsonify({"msg": "Invalid points value"}), 400
-
+        
     user = User.query.get(user_id)
     if not user:
         return jsonify({"msg": "User not found"}), 404
+        
+    now = datetime.now(timezone.utc)
+
+    unlocked_achievements = []  # Will store new unlocks
+
+    if is_daily_reward:
+        if user.last_daily_reward_claim:
+            last_claim = user.last_daily_reward_claim
+            if last_claim.tzinfo is None:
+                last_claim = last_claim.replace(tzinfo=timezone.utc)
+            # Check cooldown (deny if less than 24h)
+            if (now - last_claim) < timedelta(days=1):
+                return jsonify({"msg": "You can only claim the daily reward once per day"}), 400
+        else:
+            last_claim = now - timedelta(days=1)
+
+        # Calculate cooldown for the frontend
+        elapsed = (now - last_claim).total_seconds()
+        cooldown_seconds = max(0, 24*3600 - elapsed)
+
+        user.last_daily_reward_claim = now
+
+        # 1. Increment daily claim count
+        user.daily_claim_count = (user.daily_claim_count or 0) + 1
+
+        # 2. Check and unlock achievements for daily claims
+
+        achievements = Achievement.query.filter_by(condition_type='daily_claims').all()
+        for ach in achievements:
+            if user.daily_claim_count >= ach.condition_value:
+                already = UserAchievement.query.filter_by(user_id=user.id, achievement_id=ach.id).first()
+                if not already:
+                    new_ua = UserAchievement(
+                        user_id=user.id,
+                        achievement_id=ach.id,
+                        unlocked=True,
+                        unlocked_at=now
+                    )
+                    db.session.add(new_ua)
+                    unlocked_achievements.append({
+                        "id": ach.id,
+                        "title": ach.name,
+                        "description": ach.description
+                    })
+
+        # Emit socket event
+        socketio.emit(
+            'daily_reward_claimed',
+            {
+                'user_id': user_id,
+                'cooldown': cooldown_seconds
+            },
+            namespace='/socket'
+        )
 
     user.fitte_points = new_points
     db.session.commit()
-    return jsonify({"msg": "Fitte Points updated", "points": user.fitte_points}), 200
+
+    next_claim_time = None
+    if user.last_daily_reward_claim:
+        next_claim_time = (user.last_daily_reward_claim + timedelta(days=1)).isoformat()
+        
+    return jsonify({
+        "msg": "Fitte Points updated",
+        "points": user.fitte_points,
+        "nextClaimTime": next_claim_time,
+        "unlockedAchievements": unlocked_achievements
+    }), 200
+
+
 
 @app.route('/api/playlist', methods=['GET'])
 def get_playlist():
-    songs = Song.query.order_by(Song.upload_timestamp.desc()).all()
+    songs = Song.query.order_by(Song.position.asc()).all()
     songs_list = []
     for song in songs:
         songs_list.append({
@@ -2059,9 +2467,197 @@ def get_playlist():
             "title": song.title,
             "artist": song.artist,
             "cover": song.cover,
-            "soundcloudUrl": song.soundcloudUrl
+            "soundcloudUrl": song.soundcloudUrl,
+            "position": song.position
         })
     return jsonify({"songs": songs_list}), 200
+
+@app.route('/api/playlist/reorder', methods=['PUT'])
+@jwt_required()
+def reorder_playlist():
+    try:
+        data = request.get_json()
+        songs = data.get('songs', [])
+        
+        if not songs:
+            return jsonify({"msg": "No songs provided for reordering"}), 400
+            
+        for song_data in songs:
+            if not isinstance(song_data, dict) or 'id' not in song_data or 'position' not in song_data:
+                return jsonify({"msg": "Invalid song data format"}), 400
+
+            song = Song.query.get(song_data['id'])
+            if song:
+                song.position = song_data['position']
+                db.session.add(song)
+        
+        db.session.commit()
+        
+        songs_in_db = Song.query.order_by(Song.position.asc()).all()
+        
+        return jsonify({
+            "msg": "Playlist reordered successfully",
+            "songs": [{
+                "id": s.id,
+                "title": s.title,
+                "artist": s.artist,
+                "cover": s.cover,
+                "soundcloudUrl": s.soundcloudUrl,
+                "position": s.position
+            } for s in songs_in_db]
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error reordering playlist: {e}")
+        return jsonify({"msg": "Failed to reorder playlist"}), 500
+
+
+# ===================== START Shops ENDPOINTs =====================
+
+# 1️⃣ Public: List all shop items
+@app.route('/api/shop-items', methods=['GET'])
+def list_shop_items():
+    items = ShopItem.query.order_by(ShopItem.price).all()
+    return jsonify([{
+      'id':          i.id,
+      'name':        i.name,
+      'description': i.description,
+      'price':       i.price,
+      'icon':        i.icon,
+      'type':        i.type,
+      'rarity':      i.rarity,
+      'glow_color':  i.glow_color
+    } for i in items]), 200
+
+# 2️⃣ Authenticated: Purchase one
+@app.route('/api/purchase-item', methods=['POST'])
+@jwt_required()
+def purchase_item():
+    user_id = get_jwt_identity()
+    item_id = request.json.get('itemId')
+    
+    item = ShopItem.query.get(item_id)
+    user = User.query.get(user_id)
+
+    # Check if item exists and if user has enough points
+    if not item or user.fitte_points < item.price:
+        return jsonify({'msg': 'Cannot purchase'}), 400
+
+    # Check if user already owns the item
+    existing = UserShopItem.query.filter_by(user_id=user.id, item_id=item.id).first()
+    if existing:
+        return jsonify({'msg': 'Already purchased'}), 400
+
+    # Deduct points and save purchase
+    user.fitte_points -= item.price
+    purchase = UserShopItem(user_id=user.id, item_id=item.id)
+    db.session.add(purchase)
+
+    db.session.commit()
+
+    return jsonify({'points': user.fitte_points}), 200
+
+
+# — now the Admin CRUD: only for developers/admins —
+
+# 3️⃣ Authenticated: Create new shop item
+@app.route('/api/shop-items', methods=['POST'])
+@jwt_required()
+def create_shop_item():
+    # you can add a role-check here if needed
+    data = request.get_json()
+    i = ShopItem(
+      name        = data["name"],
+      description = data.get("description"),
+      price       = data["price"],
+      icon        = data.get("icon"),
+      type        = data.get("type", "badge"),
+      rarity      = data.get("rarity"),
+      glow_color  = data.get("glow_color")
+    )
+    db.session.add(i)
+    db.session.commit()
+    return jsonify({"msg":"Created","id":i.id}), 201
+
+# 4️⃣ Authenticated: Update an existing item
+@app.route('/api/shop-items/<int:item_id>', methods=['PUT'])
+@jwt_required()
+def update_shop_item(item_id):
+    i = ShopItem.query.get_or_404(item_id)
+    data = request.get_json()
+    for f in ("name","description","price","icon","type","rarity","glow_color"):
+        if f in data:
+            setattr(i, f, data[f])
+    db.session.commit()
+    return jsonify({"msg":"Updated"}), 200
+
+# 5️⃣ Authenticated: Delete an item
+@app.route('/api/shop-items/<int:item_id>', methods=['DELETE'])
+@jwt_required()
+def delete_shop_item(item_id):
+    i = ShopItem.query.get_or_404(item_id)
+    # If the icon is a Cloudinary SVG, delete it from Cloudinary
+    if i.icon and i.icon.endswith('.svg') and 'cloudinary' in i.icon:
+        try:
+            # Extract public_id from the URL
+            # Example: https://res.cloudinary.com/your_cloud/image/upload/v1234567890/user_1/svg_icons/svg_1_filename.svg
+            # public_id = user_1/svg_icons/svg_1_filename (without .svg)
+            from urllib.parse import urlparse
+            import os
+            path = urlparse(i.icon).path  # /your_cloud/image/upload/v1234567890/user_1/svg_icons/svg_1_filename.svg
+            # Remove version and extension
+            parts = path.split('/')
+            # Find the index of 'upload' and get everything after it except the extension
+            if 'upload' in parts:
+                idx = parts.index('upload')
+                public_id_with_ext = '/'.join(parts[idx+1:])
+                public_id = os.path.splitext(public_id_with_ext)[0]
+                cloudinary.uploader.destroy(public_id, resource_type="raw")
+        except Exception as e:
+            print(f"Error deleting SVG from Cloudinary: {e}")
+
+    db.session.delete(i)
+    db.session.commit()
+    return jsonify({"msg":"Deleted"}), 200
+
+@app.route('/api/remove-item', methods=['POST'])
+@jwt_required()
+def remove_item():
+    user_id = get_jwt_identity()
+    item_id = request.json.get('itemId')
+    
+    # Find the purchased item
+    purchase = UserShopItem.query.filter_by(user_id=user_id, item_id=item_id).first()
+    if not purchase:
+        return jsonify({'msg': 'Item not found'}), 404
+
+    # Delete the purchase record
+    db.session.delete(purchase)
+    db.session.commit()
+    return jsonify({'msg': 'Item removed'}), 200
+
+# 6️⃣ Authenticated: List purchased items (for logged-in user)
+@app.route('/api/purchased-items', methods=['GET'])
+@jwt_required()
+def list_purchased_items():
+    user_id = get_jwt_identity()
+    purchases = UserShopItem.query.filter_by(user_id=user_id).all()
+    return jsonify([{
+    'id': p.item.id,
+    'name': p.item.name,
+    'description': p.item.description,
+    'price': p.item.price,
+    'icon': p.item.icon,
+    'type': p.item.type,
+    'rarity': p.item.rarity,          
+    'glow_color': p.item.glow_color     
+} for p in purchases]), 200
+
+# ===================== END Shops ENDPOINTs =====================
+
+
+
 
 
 @app.route('/api/playlist', methods=['POST'])
@@ -2388,16 +2984,116 @@ def user_points():
     user = User.query.get(int(uid))
     return jsonify({"points": user.fitte_points}), 200
 
+#Changelog api
+@app.route('/api/changelog', methods=['GET'])
+def get_changelog():
+    try:
+        changelogs = Changelog.query.order_by(Changelog.date.desc()).all()
+        return jsonify([changelog.to_dict() for changelog in changelogs]), 200
+    except Exception as e:
+        print(f"Error fetching changelog: {e}")
+        return jsonify({"msg": "Failed to fetch changelog"}), 500
+    
+@app.route('/api/changelog', methods=['POST'])
+@jwt_required()
+def add_changelog():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(int(current_user_id))
 
+    # Ensure only authorized users can add changelogs
+    if not any(role.name.lower() in ['admin', 'developer'] for role in user.roles):
+        return jsonify({"msg": "Unauthorized"}), 403
 
-# -------------------------
-# Run the Flask App
-# -------------------------
-if __name__ == '__main__':
+    data = request.get_json()
+    version = data.get('version')
+    date = data.get('date')
+    added = '\n'.join(data.get('changes', {}).get('Added', []))
+    changed = '\n'.join(data.get('changes', {}).get('Changed', []))
 
-    socketio.run(app, debug=True, port=5000)
+    if not version or not date:
+        return jsonify({"msg": "Version and date are required"}), 400
 
-# Check Username Availability Endpoint: /api/check-username
+    try:
+        new_changelog = Changelog(
+            version=version,
+            date=datetime.strptime(date, '%Y-%m-%d').date(),
+            added=added,
+            changed=changed
+        )
+        db.session.add(new_changelog)
+        db.session.commit()
+        return jsonify({"msg": "Changelog entry added successfully"}), 201
+    except Exception as e:
+        print(f"Error adding changelog: {e}")
+        return jsonify({"msg": "Failed to add changelog entry"}), 500
+
+@app.route('/api/changelog/<int:changelog_id>', methods=['DELETE'])
+@jwt_required()
+def delete_changelog(changelog_id):
+    current_user_id = get_jwt_identity()
+    user = User.query.get(int(current_user_id))
+
+    # Ensure only authorized users can delete changelogs
+    if not any(role.name.lower() in ['admin', 'developer'] for role in user.roles):
+        return jsonify({"msg": "Unauthorized"}), 403
+
+    changelog = Changelog.query.get(changelog_id)
+    if not changelog:
+        return jsonify({"msg": "Changelog entry not found"}), 404
+
+    try:
+        db.session.delete(changelog)
+        db.session.commit()
+        return jsonify({"msg": "Changelog entry deleted successfully"}), 200
+    except Exception as e:
+        print(f"Error deleting changelog: {e}")
+        return jsonify({"msg": "Failed to delete changelog entry"}), 500
+
+# --- MOVE THIS OUTSIDE, UNINDENTED ---
+import io
+
+@app.route('/api/upload-svg', methods=['POST'])
+@jwt_required()
+def upload_svg():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(int(current_user_id))
+
+    if 'svg_file' not in request.files:
+        return jsonify({"msg": "No file part"}), 400
+
+    file = request.files['svg_file']
+    if file.filename == '':
+        return jsonify({"msg": "No selected file"}), 400
+    if not file.content_type in ['image/svg+xml', 'text/xml', 'application/xml']:
+        return jsonify({"msg": "Invalid file type, only SVGs are allowed"}), 400
+
+    # Read and sanitize SVG
+    svg_data = file.read().decode('utf-8')
+    try:
+        sanitized_svg = sanitize_svg(svg_data)
+    except Exception as e:
+        return jsonify({"msg": str(e)}), 400
+
+    # Convert sanitized SVG string to a file-like object
+    svg_bytes = sanitized_svg.encode('utf-8')
+    svg_file_like = io.BytesIO(svg_bytes)
+    svg_file_like.name = file.filename  # Cloudinary uses the .name attribute for the filename
+
+    # Upload to Cloudinary as raw file
+    try:
+        result = cloudinary.uploader.upload(
+            svg_file_like,
+            resource_type="raw",  # SVGs are not images in Cloudinary, use 'raw'
+            folder=f"user_{user.id}/svg_icons",
+            public_id=f"svg_{user.id}_{os.path.splitext(file.filename)[0]}",
+            overwrite=True
+        )
+        svg_url = result['secure_url']
+        return jsonify({"msg": "SVG uploaded successfully", "url": svg_url}), 200
+    except Exception as e:
+        print(f"Error uploading SVG to Cloudinary: {e}")
+        return jsonify({"msg": "SVG upload failed"}), 500
+
 @app.route('/api/check-username', methods=['POST'])
 @jwt_required()
 def check_username():
@@ -2419,6 +3115,9 @@ def check_username():
         return jsonify({"available": True}), 200
     
     return jsonify({"available": not bool(existing_user)}), 200
+
+
+    
 
 @socketio.on('connect')
 def handle_connect():
@@ -2449,3 +3148,252 @@ def handle_maintenance_status_request():
         'notice_maintenance_message': notice_message
     })
 
+# ===================== Achievements API Endpoints =====================
+
+@app.route('/api/user/achievements', methods=['GET'])
+@jwt_required()
+def get_user_achievements():
+    user_id = get_jwt_identity()
+    # Fetch all possible achievements
+    all_achievements = Achievement.query.all()
+    # Fetch user's unlocked
+    unlocked_ids = set(
+        ua.achievement_id for ua in UserAchievement.query.filter_by(user_id=user_id)
+    )
+    # Build a list showing locked/unlocked status
+    result = []
+    for ach in all_achievements:
+        result.append({
+        "id": ach.id,
+        "title": ach.name,  # or ach.title, just pick one everywhere!
+        "description": ach.description,
+        "icon": ach.icon,   # or 'svg', just be consistent!
+        "achieved": ach.id in unlocked_ids,
+        "unlocked_at": next(
+            (ua.unlocked_at.isoformat() for ua in UserAchievement.query.filter_by(user_id=user_id, achievement_id=ach.id)), None
+        ) if ach.id in unlocked_ids else None,
+        "rarity": ach.rarity,
+        "glow_color": ach.glow_color
+    })
+    return jsonify(result)
+
+
+@app.route('/api/achievements/<int:id>', methods=['DELETE'])
+@jwt_required()
+def delete_achievement(id):
+    user_id = get_jwt_identity()
+    user = User.query.get(int(user_id))
+    if not user or not any(role.name.lower() in ['admin', 'developer'] for role in user.roles):
+        return jsonify({"msg": "Unauthorized"}), 403
+    achievement = Achievement.query.get(id)
+    if not achievement:
+        return jsonify({"msg": "Achievement not found"}), 404
+    db.session.delete(achievement)
+    db.session.commit()
+    return jsonify({"msg": "Achievement deleted"}), 200
+
+@app.route('/api/user/achievements/unlock', methods=['POST'])
+@jwt_required()
+def unlock_achievement():
+    user_id = get_jwt_identity()
+    achievement_id = request.json.get('achievement_id')
+    if not achievement_id:
+        return jsonify({"status": "missing_achievement_id"}), 400
+    achievement = Achievement.query.get(achievement_id)
+    if not achievement:
+        return jsonify({"status": "invalid_achievement"}), 404
+    already = UserAchievement.query.filter_by(user_id=user_id, achievement_id=achievement_id).first()
+    if already:
+        return jsonify({
+            "status": "already_unlocked",
+            "achievement_id": achievement_id,
+            "unlocked_at": already.unlocked_at.isoformat() if already.unlocked_at else None
+        }), 200
+    now = datetime.now(timezone.utc)
+    new_unlock = UserAchievement(user_id=user_id, achievement_id=achievement_id, unlocked_at=now)
+    db.session.add(new_unlock)
+    db.session.commit()
+    return jsonify({
+        "status": "ok",
+        "achievement_id": achievement_id,
+        "unlocked_at": now.isoformat()
+    }), 201
+
+# --- Only unlocked achievements for the user ---
+@app.route('/api/user/achievements/unlocked', methods=['GET'])
+@jwt_required()
+def get_user_achievements_unlocked():
+    current_user_id = get_jwt_identity()
+    achievements = UserAchievement.query.filter_by(user_id=current_user_id).all()
+    result = [{
+        "id": ua.achievement.id,
+        "title": ua.achievement.name,
+        "icon": ua.achievement.icon,
+        "unlocked_at": ua.unlocked_at.isoformat()
+    } for ua in achievements]
+    return jsonify(result), 200
+
+# --- Optional: All achievements, not user-specific ---
+@app.route('/api/all-achievements', methods=['GET'])
+
+def get_all_achievements():
+    all_achievements = Achievement.query.all()
+    result = [{
+        "id": a.id,
+        "title": a.name,
+        "icon": a.icon,
+        "description": a.description
+    } for a in all_achievements]
+    return jsonify(result), 200
+
+@app.route('/api/achievements', methods=['POST'])
+@jwt_required()
+def create_achievement():
+    data = request.get_json()
+    # Validate the required fields
+    if not data.get('title') or not data.get('description'):
+        return jsonify({'msg': 'Missing required fields'}), 400
+
+    new_ach = Achievement(
+        name=data.get('title'),
+        description=data.get('description'),
+        icon=data.get('icon'),
+        condition_type=data.get('condition_type'),
+        condition_value=data.get('condition_value'),
+        rarity=data.get('rarity'),
+        glow_color=data.get('glow_color')
+    )
+    db.session.add(new_ach)
+    db.session.commit()
+    return jsonify({'msg': 'Achievement created', 'id': new_ach.id}), 201
+
+
+@app.route('/api/achievements/<int:ach_id>', methods=['PUT'])
+@jwt_required()
+def update_achievement(ach_id):
+    data = request.get_json()
+    ach = Achievement.query.get(ach_id)
+    if not ach:
+        return jsonify({'msg': 'Achievement not found'}), 404
+
+    ach.name = data.get('title', ach.name)
+    ach.description = data.get('description', ach.description)
+    ach.icon = data.get('icon', ach.icon)
+    ach.condition_type = data.get('condition_type', ach.condition_type)
+    ach.condition_value = data.get('condition_value', ach.condition_value)
+    ach.rarity = data.get('rarity', ach.rarity)
+    ach.glow_color = data.get('glow_color', ach.glow_color)
+
+    db.session.commit()
+    return jsonify({'msg': 'Achievement updated'}), 200
+
+
+# ===================== END Achievements API Endpoints =====================
+def check_and_unlock_clicker_achievements(user):
+    stats = {
+        "clicks": user.clicker_clicks,
+        "autoClickers": user.clicker_auto_clickers,
+        "perClick": user.clicker_per_click,
+    }
+    for ach in GAME_ACHIEVEMENTS:
+        progress = stats.get(ach["type"])
+        if progress is not None and progress >= ach["value"]:
+            unlocked = UserAchievement.query.filter_by(user_id=user.id, achievement_id=ach["id"]).first()
+            if not unlocked:
+                new_unlock = UserAchievement(
+                    user_id=user.id,
+                    achievement_id=ach["id"],
+                    unlocked_at=datetime.now(timezone.utc)
+                )
+                db.session.add(new_unlock)
+
+@app.route('/api/clicker/update', methods=['POST'])
+@jwt_required()
+def update_clicker_stats():
+    user_id = get_jwt_identity()
+    data = request.json
+
+    # e.g. {"clicks": 1337, "autoClickers": 2, "perClick": 3}
+    clicks = data.get('clicks')
+    autoClickers = data.get('autoClickers')
+    perClick = data.get('perClick')
+
+    user = User.query.get(user_id)
+    user.clicker_clicks = clicks
+    user.clicker_auto_clickers = autoClickers
+    user.clicker_per_click = perClick
+
+    check_and_unlock_clicker_achievements(user)
+    db.session.commit()
+    return jsonify({"msg": "Updated!"}), 200
+
+@app.route('/api/clicker-achievements', methods=['GET'])
+@jwt_required()
+def get_clicker_achievements():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    # Get all unlocked achievement IDs for this user
+    unlocked = UserAchievement.query.filter_by(user_id=user_id).all()
+    unlocked_ids = {a.achievement_id: a.unlocked_at for a in unlocked}
+
+    # List to return
+    achievements = []
+    for ach in GAME_ACHIEVEMENTS:
+        is_unlocked = ach["id"] in unlocked_ids
+        achievements.append({
+            "id": ach["id"],
+            "title": ach.get("title"),
+            "description": ach.get("description"),
+            "svg": ach.get("icon") or ach.get("svg"),  # adjust field name
+            "rarity": ach.get("rarity", "common"),
+            "glow_color": ach.get("glow_color", "#fff"),
+            "achieved": is_unlocked,
+            "unlocked_at": unlocked_ids.get(ach["id"]),
+            "category": "clicker"
+        })
+
+    return jsonify(achievements)
+
+@app.route('/api/admin/delete-user-achievement', methods=['POST'])
+@jwt_required()  # or some admin auth
+def delete_user_achievement():
+    user_id = request.json.get('user_id')
+    achievement_id = request.json.get('achievement_id')
+    ua = UserAchievement.query.filter_by(user_id=user_id, achievement_id=achievement_id).first()
+    if ua:
+        db.session.delete(ua)
+        db.session.commit()
+        return jsonify({"msg": "Deleted!"})
+    return jsonify({"msg": "Not found"}), 404
+
+@app.route('/api/user/<int:user_id>/achievements', methods=['GET'])
+@jwt_required()
+def get_any_user_achievements(user_id):
+    print("JWT identity:", get_jwt_identity())
+    # Optionally check if current user is admin/dev
+    requesting_user = User.query.get(int(get_jwt_identity()))
+    if not any(role.name.lower() in ['admin', 'developer'] for role in requesting_user.roles):
+        return jsonify({"msg": "Unauthorized"}), 403
+
+    unlocked = UserAchievement.query.filter_by(user_id=user_id).all()
+    result = [{
+        "achievement_id": ua.achievement.id,
+        "name": ua.achievement.name,
+        "unlocked_at": ua.unlocked_at.isoformat() if ua.unlocked_at else None,
+    } for ua in unlocked]
+    return jsonify(result), 200
+
+
+from mini_games.ClickerApi import clicker_api, init_db
+init_db(db, User)  # Pass both db and User model
+app.register_blueprint(clicker_api)
+# -------------------------
+# Run the Flask App
+# -------------------------
+if __name__ == '__main__':
+    port = int(os.getenv('PORT', '5000'))
+    debug = os.getenv("FLASK_ENV") != "production"
+    socketio.run(app, debug=debug, host='0.0.0.0', port=port)
+
+# Check Username Availability Endpoint: /api/check-username

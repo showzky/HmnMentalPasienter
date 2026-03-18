@@ -10,7 +10,7 @@ import Dashboard from '@/pages/Dashboard.vue';
 import Login from '@/pages/Login.vue';
 import Comments from '@/pages/Comments.vue';
 import Forum from '@/pages/Forum.vue';
-import Exclusive from '@/pages/exclusive.vue';
+import Exclusive from '@/pages/Exclusive.vue';
 import NotFound from '@/pages/NotFound.vue';
 import Management from '@/pages/Management.vue';
 import EventDetailPage from '@/pages/EventDetailPage.vue';
@@ -20,6 +20,14 @@ import FriendsList from '@/views/FriendsList.vue'
 import PendingRequests from '../components/PendingRequests.vue';
 import Shop from '@/pages/Shop.vue';
 import Contact from '@/pages/Contact.vue';   
+import Changelog from '../pages/Info/Changelog.vue';
+import News from '../pages/Info/News.vue';
+import ClickerGame from '../views/ClickerGame.vue';
+//import ComingSoon from '../pages/Info/ComingSoon.vue'; 
+import ClickerLeaderBoard from '../views/ClickerLeaderBoard.vue';
+import TermsOfService from '../components/LegalStuff/TermsOfService.vue';
+import DinoRunner from '../views/DinoRunner.vue';
+
 
 const routes = [
   { path: '/', component: Home },
@@ -36,12 +44,15 @@ const routes = [
   { path: '/events/:eventId', name: 'EventDetail', component: EventDetailPage, props: true },
   { path: '/settings', component: Settings, meta: { requiresAuth: true } },
   { path: '/shop', name: 'Shop', component: Shop, meta: { requiresAuth: true } },
+
+
   {
     path: '/users/:userId',
     name: 'UserProfile',
     component: Dashboard,
     meta: { requiresAuth: true }
   },
+  //{ path: '/clicker-game', redirect: '/coming-soon' },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound },
   {
     path: '/friends',
@@ -49,6 +60,15 @@ const routes = [
     component: FriendsList
   },
   {path: '/contact', name: 'Contact', component: Contact, meta: { requiresAuth: false } }, 
+  {path: '/changelog', name: 'Changelog', component: Changelog, meta: { requiresAuth: false},},
+  {path: '/news', name: 'News', component: News, meta: { requiresAuth: true},},
+  //{ path: '/coming-soon', name: 'ComingSoon', component: ComingSoon },
+  {path: '/clicker-game', name: 'ClickerGame', component: ClickerGame, meta: { requiresAuth: true},},
+ { path: '/clicker-leaderboard', name: 'ClickerLeaderBoard', component: ClickerLeaderBoard, meta: {requiresAuth: true} },
+ { path: '/tos', name: 'TermsOfService', component: TermsOfService, meta: {requiresAuth: false}},
+ { path: '/HmnRunner', name: 'DinoRunner', component: DinoRunner, meta: {requiresAuth: true}}
+
+
 ];
 
 const router = createRouter({
